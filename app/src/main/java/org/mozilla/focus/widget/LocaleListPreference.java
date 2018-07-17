@@ -30,7 +30,7 @@ import java.util.Set;
 public class LocaleListPreference extends ListPreference {
     private static final String LOG_TAG = "GeckoLocaleList";
 
-    private static Map<String, String> languageCodeToNameMap = new HashMap<>();
+    private static final Map<String, String> languageCodeToNameMap = new HashMap<>();
     static {
         // Only ICU 57 actually contains the Asturian name for Asturian, even Android 7.1 is still
         // shipping with ICU 56, so we need to override the Asturian name (otherwise displayName will
@@ -45,6 +45,17 @@ public class LocaleListPreference extends ListPreference {
         languageCodeToNameMap.put("mix", "Tu'un savi");
         languageCodeToNameMap.put("trs", "Triqui");
         languageCodeToNameMap.put("zam", "DíɁztè");
+        languageCodeToNameMap.put("oc", "occitan");
+        languageCodeToNameMap.put("an", "Aragonés");
+        languageCodeToNameMap.put("tt", "татарча");
+        languageCodeToNameMap.put("wo", "Wolof");
+        languageCodeToNameMap.put("anp", "अंगिका");
+        languageCodeToNameMap.put("ixl", "Ixil");
+        languageCodeToNameMap.put("pai", "Paa ipai");
+        languageCodeToNameMap.put("quy", "Chanka Qhichwa");
+        languageCodeToNameMap.put("ay", "Aimara");
+        languageCodeToNameMap.put("quc", "K'iche'");
+        languageCodeToNameMap.put("tsz", "P'urhepecha");
     }
 
     /**

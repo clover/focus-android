@@ -16,7 +16,7 @@
         <View
             android:id="@+id/status_bar_background"
             android:layout_width="match_parent"
-            android:layout_height="25dp"
+            android:layout_height="0dp"
             android:background="@drawable/animated_background" />
 
         <org.mozilla.focus.widget.ResizableKeyboardCoordinatorLayout
@@ -38,7 +38,8 @@
                     android:id="@+id/webview"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:scrollbarThumbVertical="@drawable/scrollbar_thumb" />
+                    android:scrollbarThumbVertical="@drawable/scrollbar_thumb"
+                    app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
             </android.support.v4.widget.SwipeRefreshLayout>
 
@@ -53,11 +54,13 @@
                 android:layout_marginBottom="@dimen/floating_action_button_margin"
                 android:layout_marginEnd="@dimen/floating_action_button_margin"
                 android:elevation="4dp"
+                android:src="@drawable/tab_number_border"
                 android:visibility="gone"
                 app:backgroundTint="@color/colorMultitasking"
                 app:rippleColor="@color/colorMultitaskingPressed"
                 app:layout_behavior="org.mozilla.focus.widget.FloatingActionButtonBehavior"
-                app:fabSize="normal" />
+                app:fabSize="normal"
+                app:layout_dodgeInsetEdges="bottom"/>
 
             <org.mozilla.focus.widget.FloatingEraseButton
                 android:id="@+id/erase"
@@ -70,12 +73,31 @@
                 android:src="@drawable/ic_delete"
                 app:backgroundTint="@color/colorEraseClover"
                 app:rippleColor="@color/colorErasePressedClover"
+                android:visibility="gone"
                 app:fabSize="normal"
                 app:layout_behavior="org.mozilla.focus.widget.FloatingActionButtonBehavior"
-                android:contentDescription="@string/content_description_erase" />
+                android:contentDescription="@string/content_description_erase"
+                app:layout_dodgeInsetEdges="bottom"/>
 
+            <include
+                android:id="@+id/find_in_page"
+                layout="@layout/find_in_page"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_gravity="bottom"
+                android:visibility="gone"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior"
+                app:layout_insetEdge="bottom"/>
         </org.mozilla.focus.widget.ResizableKeyboardCoordinatorLayout>
     </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/popup_tint"
+        android:visibility="gone"
+        android:background="@android:color/black"
+        android:alpha=".5"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 
     <FrameLayout
         android:id="@+id/video_container"

@@ -13,7 +13,7 @@ import org.mozilla.focus.R;
 /* package-private */ class MenuItemViewHolder extends BrowserMenuViewHolder {
     /* package-private */ static final int LAYOUT_ID = R.layout.menu_item;
 
-    private TextView menuItemView;
+    private final TextView menuItemView;
 
     /* package-private */ MenuItemViewHolder(View itemView) {
         super(itemView);
@@ -21,13 +21,13 @@ import org.mozilla.focus.R;
         menuItemView = (TextView) itemView;
     }
 
-    /* package-private */ void bind(BrowserMenuAdapter.MenuItem menuItem) {
-        menuItemView.setId(menuItem.id);
-        menuItemView.setText(menuItem.label);
+    /* package-private */ void bind(BrowserMenuAdapter.MenuItem.Default menuItem) {
+        menuItemView.setId(menuItem.getId());
+        menuItemView.setText(menuItem.getLabel());
 
         final boolean isLoading = browserFragment.getSession().getLoading().getValue();
 
-        if (menuItem.id == R.id.add_to_homescreen && isLoading) {
+        if ((menuItem.getId() == R.id.add_to_homescreen || menuItem.getId() == R.id.find_in_page) && isLoading) {
             menuItemView.setTextColor(browserFragment.getResources().getColor(R.color.colorTextInactive));
             menuItemView.setClickable(false);
         } else {
