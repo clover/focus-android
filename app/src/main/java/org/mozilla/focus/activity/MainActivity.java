@@ -148,6 +148,8 @@ public class MainActivity extends LocaleAwareAppCompatActivity {
         super.onStop();
 
         TelemetryWrapper.stopMainActivity();
+
+        finish();
     }
 
     @Override
