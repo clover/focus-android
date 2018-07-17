@@ -10,6 +10,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -25,6 +27,7 @@ import org.mozilla.focus.R;
 import org.mozilla.focus.session.SessionManager;
 import org.mozilla.focus.session.Source;
 import org.mozilla.focus.telemetry.TelemetryWrapper;
+import org.mozilla.focus.telemetry.TelemetryWrapper.BrowserContextMenuValue;
 import org.mozilla.focus.utils.UrlUtils;
 import org.mozilla.focus.web.Download;
 import org.mozilla.focus.web.IWebView;
@@ -66,13 +69,24 @@ public class WebContextMenu {
         builder.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override
             public void onCancel(DialogInterface dialog) {
+                // What type of element was long-pressed
+                final BrowserContextMenuValue value;
+                if (hitTarget.isImage && hitTarget.isLink) {
+                    value = BrowserContextMenuValue.ImageWithLink;
+                } else if (hitTarget.isImage) {
+                    value = BrowserContextMenuValue.Image;
+                } else {
+                    value = BrowserContextMenuValue.Link;
+                }
+
                 // This even is only sent when the back button is pressed, or when a user
                 // taps outside of the dialog:
-                TelemetryWrapper.cancelWebContextMenuEvent();
+                TelemetryWrapper.cancelWebContextMenuEvent(value);
             }
         });
 
         final Dialog dialog = builder.create();
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
         final NavigationView menu = (NavigationView) view.findViewById(R.id.context_menu);
         setupMenuForHitTarget(dialog, menu, callback, hitTarget);

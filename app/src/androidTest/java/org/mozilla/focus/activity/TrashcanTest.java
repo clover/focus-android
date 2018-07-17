@@ -7,7 +7,6 @@ package org.mozilla.focus.activity;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.rule.ActivityTestRule;
@@ -22,17 +21,24 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mozilla.focus.helpers.TestHelper;
 
+import java.io.IOException;
+
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+
 import static android.support.test.espresso.action.ViewActions.click;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
-import static org.mozilla.focus.helpers.TestHelper.waitingTime;
 import static org.mozilla.focus.fragment.FirstrunFragment.FIRSTRUN_PREF;
+import static org.mozilla.focus.helpers.TestHelper.waitingTime;
 
 // This test erases URL and checks for message
 @RunWith(AndroidJUnit4.class)
 public class TrashcanTest {
+    private static final String TEST_PATH = "/";
+    private MockWebServer webServer;
 
     @Rule
     public ActivityTestRule<MainActivity> mActivityTestRule
@@ -50,26 +56,51 @@ public class TrashcanTest {
                     .edit()
                     .putBoolean(FIRSTRUN_PREF, true)
                     .apply();
+
+            webServer = new MockWebServer();
+
+            try {
+                webServer.enqueue(new MockResponse()
+                        .setBody(TestHelper.readTestAsset("plain_test.html")));
+                webServer.enqueue(new MockResponse()
+                        .setBody(TestHelper.readTestAsset("plain_test.html")));
+                webServer.enqueue(new MockResponse()
+                        .setBody(TestHelper.readTestAsset("plain_test.html")));
+
+                webServer.start();
+            } catch (IOException e) {
+                throw new AssertionError("Could not start web server", e);
+            }
+        }
+
+        @Override
+        protected void afterActivityFinished() {
+            super.afterActivityFinished();
+
+            try {
+                webServer.close();
+                webServer.shutdown();
+            } catch (IOException e) {
+                throw new AssertionError("Could not stop web server", e);
+            }
         }
     };
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         mActivityTestRule.getActivity().finishAndRemoveTask();
     }
 
     @Test
-    public void TrashTest() throws InterruptedException, UiObjectNotFoundException {
+    public void TrashTest() throws UiObjectNotFoundException {
 
         // Open a webpage
-        //TestHelper.urlBar.waitForExists(waitingTime);
-        //TestHelper.urlBar.click();
         TestHelper.inlineAutocompleteEditText.waitForExists(waitingTime);
         TestHelper.inlineAutocompleteEditText.clearTextField();
-        TestHelper.inlineAutocompleteEditText.setText("mozilla");
+        TestHelper.inlineAutocompleteEditText.setText(webServer.url(TEST_PATH).toString());
         TestHelper.hint.waitForExists(waitingTime);
         TestHelper.pressEnterKey();
-        assertTrue(TestHelper.webView.waitForExists(waitingTime));
+        TestHelper.waitForWebContent();
 
         // Press erase button, and check for message and return to the main page
         TestHelper.floatingEraseButton.perform(click());
@@ -79,14 +110,14 @@ public class TrashcanTest {
     }
 
     @Test
-    public void systemBarTest() throws InterruptedException, UiObjectNotFoundException {
+    public void systemBarTest() throws UiObjectNotFoundException {
         // Open a webpage
         TestHelper.inlineAutocompleteEditText.waitForExists(waitingTime);
         TestHelper.inlineAutocompleteEditText.clearTextField();
-        TestHelper.inlineAutocompleteEditText.setText("mozilla");
+        TestHelper.inlineAutocompleteEditText.setText(webServer.url(TEST_PATH).toString());
         TestHelper.hint.waitForExists(waitingTime);
         TestHelper.pressEnterKey();
-        assertTrue(TestHelper.webView.waitForExists(waitingTime));
+        TestHelper.waitForWebContent();
         TestHelper.menuButton.perform(click());
         TestHelper.blockCounterItem.waitForExists(waitingTime);
 
@@ -101,20 +132,18 @@ public class TrashcanTest {
     }
 
     @Test
-    public void systemBarHomeViewTest() throws InterruptedException, UiObjectNotFoundException, RemoteException {
+    public void systemBarHomeViewTest() throws UiObjectNotFoundException  {
 
         // Initialize UiDevice instance
         final int LAUNCH_TIMEOUT = 5000;
-        final String FOCUS_DEBUG_APP = "org.mozilla.focus.debug";
 
         // Open a webpage
         TestHelper.inlineAutocompleteEditText.waitForExists(waitingTime);
         TestHelper.inlineAutocompleteEditText.clearTextField();
-        TestHelper.inlineAutocompleteEditText.setText("mozilla");
+        TestHelper.inlineAutocompleteEditText.setText(webServer.url(TEST_PATH).toString());
         TestHelper.hint.waitForExists(waitingTime);
         TestHelper.pressEnterKey();
-        assertTrue(TestHelper.webView.waitForExists(waitingTime));
-
+        TestHelper.waitForWebContent();
         // Switch out of Focus, pull down system bar and select delete browsing history
         TestHelper.pressHomeKey();
         TestHelper.openNotification();
@@ -128,13 +157,7 @@ public class TrashcanTest {
                 LAUNCH_TIMEOUT);
 
         // Launch the app
-        Context context = InstrumentationRegistry.getInstrumentation()
-                .getTargetContext()
-                .getApplicationContext();
-        final Intent intent = context.getPackageManager()
-                .getLaunchIntentForPackage(FOCUS_DEBUG_APP);
-        context.startActivity(intent);
-
+        mActivityTestRule.launchActivity(new Intent(Intent.ACTION_MAIN));
         // Verify that it's on the main view, not showing the previous browsing session
         TestHelper.inlineAutocompleteEditText.waitForExists(waitingTime);
         assertTrue(TestHelper.inlineAutocompleteEditText.exists());

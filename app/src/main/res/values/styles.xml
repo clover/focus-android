@@ -32,7 +32,7 @@
     </style>
 
     <style name="SettingsTheme" parent="Theme.AppCompat.NoActionBar">
-        <item name="colorAccent">@color/colorAccentSettings</item>
+        <item name="colorAccent">@color/colorAccent</item>
         <item name="actionButtonStyle">@style/SettingsActionButtonStyle</item>
     </style>
 
@@ -92,5 +92,32 @@
         <item name="android:fontFamily">@string/font_roboto_medium</item>
         <item name="android:textStyle">normal</item>
         <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+
+    <style name="DoorHanger">
+        <item name="android:textColor">@color/snackbarTextColor</item>
+        <item name="android:textColorLink">@color/doorhanger_link</item>
+    </style>
+
+    <style name="DoorHanger.Medium">
+        <item name="android:textSize">16dp</item>
+    </style>
+
+    <style name="DoorHanger.Medium.Bold">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="DoorHanger.Medium.Light">
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+
+    <style name="HintTextAppearance">
+        <item name="android:textColor">@color/colorTextInactive</item>
+        <item name="android:textSize">9sp</item>
+    </style>
+
+    <style name="ColorHandleTheme">
+        <item name="android:colorControlActivated">@color/photonBlue50</item>
     </style>
 </resources>

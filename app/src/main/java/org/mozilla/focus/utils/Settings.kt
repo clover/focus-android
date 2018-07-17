@@ -11,11 +11,11 @@ import android.preference.PreferenceManager
 
 import org.mozilla.focus.R
 import org.mozilla.focus.fragment.FirstrunFragment
-import org.mozilla.focus.search.SearchEngine
 
 /**
  * A simple wrapper for SharedPreferences that makes reading preference a little bit easier.
  */
+@Suppress("TooManyFunctions") // This class is designed to have a lot of (simple) functions
 class Settings private constructor(context: Context) {
     companion object {
         private var instance: Settings? = null
@@ -33,8 +33,8 @@ class Settings private constructor(context: Context) {
     private val preferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
     private val resources: Resources = context.resources
 
-    val defaultSearchEngineName: String?
-        get() = preferences.getString(getPreferenceKey(R.string.pref_key_search_engine), null)
+    val defaultSearchEngineName: String
+        get() = preferences.getString(getPreferenceKey(R.string.pref_key_search_engine), "")
 
     fun shouldBlockImages(): Boolean =
             // Not shipping in v1 (#188)
@@ -43,15 +43,47 @@ class Settings private constructor(context: Context) {
                     false); */
             false
 
+    fun shouldEnableRemoteDebugging(): Boolean =
+            preferences.getBoolean(
+                    getPreferenceKey(R.string.pref_key_remote_debugging),
+                    false)
+
+    fun shouldBlockWebFonts(): Boolean =
+        preferences.getBoolean(
+            getPreferenceKey(R.string.pref_key_performance_block_webfonts),
+            false)
+
+    fun shouldBlockJavaScript(): Boolean =
+            preferences.getBoolean(
+                getPreferenceKey(R.string.pref_key_performance_block_javascript),
+                false)
+
+    fun shouldBlockCookiesValue(): String =
+            preferences.getString(getPreferenceKey(R.string
+                    .pref_key_performance_enable_cookies),
+                    resources.getString(R.string.preference_privacy_should_block_cookies_no_option))
+
+    fun shouldBlockCookies(): Boolean =
+            shouldBlockCookiesValue().equals(resources.getString(
+                    R.string.preference_privacy_should_block_cookies_yes_option))
+
+    fun shouldBlockThirdPartyCookies(): Boolean =
+            shouldBlockCookiesValue().equals(
+                    resources.getString(
+                            R.string.preference_privacy_should_block_cookies_third_party_only_option)) ||
+                    shouldBlockCookiesValue().equals(
+                            resources.getString(
+                                    R.string.preference_privacy_should_block_cookies_yes_option))
+
     fun shouldShowFirstrun(): Boolean =
             !preferences.getBoolean(FirstrunFragment.FIRSTRUN_PREF, false)
 
     fun shouldUseSecureMode(): Boolean =
             preferences.getBoolean(getPreferenceKey(R.string.pref_key_secure), false)
 
-    fun setDefaultSearchEngine(searchEngine: SearchEngine) {
+    fun setDefaultSearchEngineByName(name: String) {
         preferences.edit()
-                .putString(getPreferenceKey(R.string.pref_key_search_engine), searchEngine.name)
+                .putString(getPreferenceKey(R.string.pref_key_search_engine), name)
                 .apply()
     }
 
@@ -63,6 +95,26 @@ class Settings private constructor(context: Context) {
     fun shouldAutocompleteFromCustomDomainList() =
             preferences.getBoolean(
                     getPreferenceKey(R.string.pref_key_autocomplete_custom),
+                    false)
+
+    fun shouldBlockAdTrackers() =
+            preferences.getBoolean(
+                    getPreferenceKey(R.string.pref_key_privacy_block_ads),
+                    true)
+
+    fun shouldBlockAnalyticTrackers() =
+            preferences.getBoolean(
+                    getPreferenceKey(R.string.pref_key_privacy_block_analytics),
+                    true)
+
+    fun shouldBlockSocialTrackers() =
+            preferences.getBoolean(
+                    getPreferenceKey(R.string.pref_key_privacy_block_social),
+                    true)
+
+    fun shouldBlockOtherTrackers() =
+            preferences.getBoolean(
+                    getPreferenceKey(R.string.pref_key_privacy_block_other),
                     false)
 
     private fun getPreferenceKey(resourceId: Int): String =
