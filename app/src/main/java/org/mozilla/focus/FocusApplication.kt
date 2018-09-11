@@ -45,7 +45,7 @@ class FocusApplication : LocaleAwareApplication() {
         registerActivityLifecycleCallbacks(visibilityLifeCycleCallback)
 
         val sessions = SessionManager.getInstance().sessions
-        sessions.observeForever(NotificationSessionObserver(this))
+        //sessions.observeForever(NotificationSessionObserver(this))
         sessions.observeForever(TelemetrySessionObserver())
         sessions.observeForever(CleanupSessionObserver(this))
 

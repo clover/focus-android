@@ -7,6 +7,7 @@ package org.mozilla.focus.activity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentManager;
@@ -14,6 +15,11 @@ import android.support.v4.app.FragmentTransaction;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.WindowManager;
+
+import com.clover.sdk.util.CloverAccount;
+import com.clover.sdk.v3.employees.AccountRole;
+import com.clover.sdk.v3.employees.Employee;
+import com.clover.sdk.v3.employees.EmployeeConnector;
 
 import org.mozilla.focus.R;
 import org.mozilla.focus.architecture.NonNullObserver;
@@ -32,10 +38,12 @@ import org.mozilla.focus.web.IWebView;
 import org.mozilla.focus.web.WebViewProvider;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import mozilla.components.support.utils.SafeIntent;
 
-public class MainActivity extends LocaleAwareAppCompatActivity {
+public class MainActivity extends LocaleAwareAppCompatActivity implements EmployeeConnector.OnActiveEmployeeChangedListener {
     public static final String ACTION_ERASE = "erase";
     public static final String ACTION_OPEN = "open";
 
@@ -45,6 +53,32 @@ public class MainActivity extends LocaleAwareAppCompatActivity {
     private static final String EXTRA_SHORTCUT = "shortcut";
 
     private final SessionManager sessionManager;
+
+    private final ExecutorService cloverEmployeeExecutor = Executors.newSingleThreadExecutor();
+    private EmployeeConnector cloverEmployees;
+    private class CloverEmployeeTask extends AsyncTask<Void,Void,Boolean> {
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            try {
+                Employee employee = cloverEmployees.getEmployee();
+                if (employee != null && employee.getRole() == AccountRole.ADMIN) {
+                    return true;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean admin) {
+            if (!admin) {
+                finish();
+            }
+        }
+    };
+    private CloverEmployeeTask cloverEmployeeTask;
+
 
     public MainActivity() {
         sessionManager = SessionManager.getInstance();
@@ -75,6 +109,26 @@ public class MainActivity extends LocaleAwareAppCompatActivity {
         registerSessionObserver();
 
         WebViewProvider.preload(this);
+
+        if (cloverEmployees == null) {
+            cloverEmployees = new EmployeeConnector(this, CloverAccount.getAccount(this), null);
+            cloverEmployees.connect();
+            cloverEmployees.addOnActiveEmployeeChangedListener(this);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (cloverEmployeeTask != null) {
+            cloverEmployeeTask.cancel(true);
+            cloverEmployeeTask = null;
+        }
+        if (cloverEmployees != null) {
+            cloverEmployees.removeOnActiveEmployeeChangedListener(this);
+            cloverEmployees.disconnect();
+            cloverEmployees = null;
+        }
+        super.onDestroy();
     }
 
     private void registerSessionObserver() {
@@ -119,7 +173,18 @@ public class MainActivity extends LocaleAwareAppCompatActivity {
         // We don't care here: all our fragments update themselves as appropriate
     }
 
-    @Override
+  @Override
+  protected void onStart() {
+    super.onStart();
+
+    if (cloverEmployeeTask != null) {
+      cloverEmployeeTask.cancel(true);
+    }
+    cloverEmployeeTask = new CloverEmployeeTask();
+    cloverEmployeeTask.executeOnExecutor(cloverEmployeeExecutor);
+  }
+
+  @Override
     protected void onResume() {
         super.onResume();
 
@@ -148,8 +213,6 @@ public class MainActivity extends LocaleAwareAppCompatActivity {
         super.onStop();
 
         TelemetryWrapper.stopMainActivity();
-
-        finish();
     }
 
     @Override
@@ -286,5 +349,14 @@ public class MainActivity extends LocaleAwareAppCompatActivity {
         }
 
         super.onBackPressed();
+    }
+
+    @Override
+    public void onActiveEmployeeChanged(Employee employee) {
+        if (employee == null) {
+            finish();
+        } else if (employee.getRole() != AccountRole.ADMIN) {
+            finish();
+        }
     }
 }
