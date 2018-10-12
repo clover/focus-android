@@ -61,7 +61,7 @@ public class MainActivity extends LocaleAwareAppCompatActivity implements Employ
         protected Boolean doInBackground(Void... voids) {
             try {
                 Employee employee = cloverEmployees.getEmployee();
-                if (employee != null && employee.getRole() == AccountRole.ADMIN) {
+                if (employee != null && employee.getRole() != AccountRole.EMPLOYEE) {
                     return true;
                 }
             } catch (Exception e) {
@@ -355,7 +355,7 @@ public class MainActivity extends LocaleAwareAppCompatActivity implements Employ
     public void onActiveEmployeeChanged(Employee employee) {
         if (employee == null) {
             finish();
-        } else if (employee.getRole() != AccountRole.ADMIN) {
+        } else if (employee.getRole() == AccountRole.EMPLOYEE) {
             finish();
         }
     }
