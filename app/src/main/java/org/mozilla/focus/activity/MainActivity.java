@@ -5,6 +5,7 @@
 
 package org.mozilla.focus.activity;
 
+import android.accounts.Account;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -20,6 +21,7 @@ import com.clover.sdk.util.CloverAccount;
 import com.clover.sdk.v3.employees.AccountRole;
 import com.clover.sdk.v3.employees.Employee;
 import com.clover.sdk.v3.employees.EmployeeConnector;
+import com.clover.sdk.v3.employees.Roles;
 
 import org.mozilla.focus.R;
 import org.mozilla.focus.architecture.NonNullObserver;
@@ -54,16 +56,13 @@ public class MainActivity extends LocaleAwareAppCompatActivity implements Employ
 
     private final SessionManager sessionManager;
 
-    private final ExecutorService cloverEmployeeExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService cloverCheckAccessExecutor = Executors.newSingleThreadExecutor();
     private EmployeeConnector cloverEmployees;
-    private class CloverEmployeeTask extends AsyncTask<Void,Void,Boolean> {
+    private class CloverCheckAccessTask extends AsyncTask<Void,Void,Boolean> {
         @Override
         protected Boolean doInBackground(Void... voids) {
             try {
-                Employee employee = cloverEmployees.getEmployee();
-                if (employee != null && employee.getRole() != AccountRole.EMPLOYEE) {
-                    return true;
-                }
+                return cloverRoles.isPermissionAllowed("_ACCESS");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -71,13 +70,14 @@ public class MainActivity extends LocaleAwareAppCompatActivity implements Employ
         }
 
         @Override
-        protected void onPostExecute(Boolean admin) {
-            if (!admin) {
+        protected void onPostExecute(Boolean allowed) {
+            if (!allowed) {
                 finish();
             }
         }
     };
-    private CloverEmployeeTask cloverEmployeeTask;
+    private Roles cloverRoles;
+    private CloverCheckAccessTask cloverCheckAccessTask;
 
 
     public MainActivity() {
@@ -110,19 +110,16 @@ public class MainActivity extends LocaleAwareAppCompatActivity implements Employ
 
         WebViewProvider.preload(this);
 
-        if (cloverEmployees == null) {
-            cloverEmployees = new EmployeeConnector(this, CloverAccount.getAccount(this), null);
-            cloverEmployees.connect();
-            cloverEmployees.addOnActiveEmployeeChangedListener(this);
-        }
+        Account cloverAccount = CloverAccount.getAccount(this);
+        cloverRoles = new Roles(this, cloverAccount);
+        cloverEmployees = new EmployeeConnector(this, cloverAccount, null);
+        cloverEmployees.connect();
+        cloverEmployees.addOnActiveEmployeeChangedListener(this);
     }
 
     @Override
     protected void onDestroy() {
-        if (cloverEmployeeTask != null) {
-            cloverEmployeeTask.cancel(true);
-            cloverEmployeeTask = null;
-        }
+        cancelCheckCloverAccess();
         if (cloverEmployees != null) {
             cloverEmployees.removeOnActiveEmployeeChangedListener(this);
             cloverEmployees.disconnect();
@@ -177,11 +174,7 @@ public class MainActivity extends LocaleAwareAppCompatActivity implements Employ
   protected void onStart() {
     super.onStart();
 
-    if (cloverEmployeeTask != null) {
-      cloverEmployeeTask.cancel(true);
-    }
-    cloverEmployeeTask = new CloverEmployeeTask();
-    cloverEmployeeTask.executeOnExecutor(cloverEmployeeExecutor);
+    checkCloverAccess();
   }
 
   @Override
@@ -351,12 +344,26 @@ public class MainActivity extends LocaleAwareAppCompatActivity implements Employ
         super.onBackPressed();
     }
 
+    private void checkCloverAccess() {
+        cancelCheckCloverAccess();
+        cloverCheckAccessTask = new CloverCheckAccessTask();
+        cloverCheckAccessTask.executeOnExecutor(cloverCheckAccessExecutor);
+    }
+
+    private void cancelCheckCloverAccess() {
+        if (cloverCheckAccessTask != null) {
+            cloverCheckAccessTask.cancel(true);
+            cloverCheckAccessTask = null;
+        }
+    }
+
+
     @Override
     public void onActiveEmployeeChanged(Employee employee) {
         if (employee == null) {
             finish();
-        } else if (employee.getRole() == AccountRole.EMPLOYEE) {
-            finish();
+        } else {
+            checkCloverAccess();
         }
     }
 }
